@@ -2,6 +2,14 @@ package io.hhplus.tdd.point;
 
 import io.hhplus.tdd.database.PointHistoryTable;
 import io.hhplus.tdd.database.UserPointTable;
+import io.hhplus.tdd.domain.PointHistory;
+import io.hhplus.tdd.domain.TransactionType;
+import io.hhplus.tdd.domain.UserPoint;
+import io.hhplus.tdd.repository.PointHistoryRepository;
+import io.hhplus.tdd.repository.PointHistoryRepositoryImpl;
+import io.hhplus.tdd.repository.UserPointRepository;
+import io.hhplus.tdd.repository.UserPointRepositoryImpl;
+import io.hhplus.tdd.service.PointService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -17,15 +25,21 @@ import static org.junit.jupiter.api.Assertions.*;
 class PointServiceTest {
 
     private PointService pointService;
-    private UserPointTable userPointTable;
-    private PointHistoryTable pointHistoryTable;
+    private UserPointRepository userPointRepository;
+    private PointHistoryRepository pointHistoryRepository;
 
     @BeforeEach
     void setUp() {
         // 각 테스트마다 새로운 인스턴스를 생성하여 테스트 간 격리를 보장
-        userPointTable = new UserPointTable();
-        pointHistoryTable = new PointHistoryTable();
-        pointService = new PointService(userPointTable, pointHistoryTable);
+        UserPointTable userPointTable = new UserPointTable();
+        PointHistoryTable pointHistoryTable = new PointHistoryTable();
+        
+        // Repository 구현체 생성
+        userPointRepository = new UserPointRepositoryImpl(userPointTable);
+        pointHistoryRepository = new PointHistoryRepositoryImpl(pointHistoryTable);
+        
+        // Service 생성
+        pointService = new PointService(userPointRepository, pointHistoryRepository);
     }
 
     @Test
@@ -50,7 +64,7 @@ class PointServiceTest {
         // given: 기존에 포인트가 있는 유저
         long userId = 1L;
         long initialPoint = 1000L;
-        userPointTable.insertOrUpdate(userId, initialPoint);
+        userPointRepository.insertOrUpdate(userId, initialPoint);
 
         // when: 포인트 조회
         UserPoint result = pointService.getUserPoint(userId);
@@ -120,7 +134,7 @@ class PointServiceTest {
         long userId = 1L;
         long initialPoint = 500L;
         long chargeAmount = 300L;
-        userPointTable.insertOrUpdate(userId, initialPoint);
+        userPointRepository.insertOrUpdate(userId, initialPoint);
 
         // when: 포인트 충전
         UserPoint result = pointService.chargeUserPoint(userId, chargeAmount);
@@ -153,7 +167,7 @@ class PointServiceTest {
         long userId = 1L;
         long initialPoint = 1000L;
         long useAmount = 300L;
-        userPointTable.insertOrUpdate(userId, initialPoint);
+        userPointRepository.insertOrUpdate(userId, initialPoint);
 
         // when: 포인트 사용
         UserPoint result = pointService.useUserPoint(userId, useAmount);
@@ -175,7 +189,7 @@ class PointServiceTest {
         long userId = 1L;
         long initialPoint = 100L;
         long useAmount = 500L;
-        userPointTable.insertOrUpdate(userId, initialPoint);
+        userPointRepository.insertOrUpdate(userId, initialPoint);
 
         // when & then: 잔고 부족 시 예외 발생
         IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
@@ -193,7 +207,7 @@ class PointServiceTest {
     void useUserPoint_WithInvalidAmount_ShouldThrowException() {
         // given: 유저 ID와 잘못된 사용 금액들
         long userId = 1L;
-        userPointTable.insertOrUpdate(userId, 1000L); // 충분한 잔고 설정
+        userPointRepository.insertOrUpdate(userId, 1000L); // 충분한 잔고 설정
 
         // when & then: 0 이하의 금액으로 사용 시 예외 발생
         assertThrows(IllegalArgumentException.class, () -> {
@@ -253,7 +267,7 @@ class PointServiceTest {
         long userId = 1L;
         long initialPoint = 500L;
         long amount = 200L;
-        userPointTable.insertOrUpdate(userId, initialPoint);
+        userPointRepository.insertOrUpdate(userId, initialPoint);
 
         // when: 동일한 금액 충전 후 사용
         pointService.chargeUserPoint(userId, amount);

@@ -1,6 +1,6 @@
 package io.hhplus.tdd.database;
 
-import io.hhplus.tdd.point.UserPoint;
+import io.hhplus.tdd.domain.UserPoint;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;

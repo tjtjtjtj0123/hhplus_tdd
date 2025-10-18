@@ -1,7 +1,16 @@
 package io.hhplus.tdd.point;
 
+import io.hhplus.tdd.controller.PointController;
 import io.hhplus.tdd.database.PointHistoryTable;
 import io.hhplus.tdd.database.UserPointTable;
+import io.hhplus.tdd.domain.PointHistory;
+import io.hhplus.tdd.domain.TransactionType;
+import io.hhplus.tdd.domain.UserPoint;
+import io.hhplus.tdd.repository.PointHistoryRepository;
+import io.hhplus.tdd.repository.PointHistoryRepositoryImpl;
+import io.hhplus.tdd.repository.UserPointRepository;
+import io.hhplus.tdd.repository.UserPointRepositoryImpl;
+import io.hhplus.tdd.service.PointService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -17,15 +26,21 @@ import static org.junit.jupiter.api.Assertions.*;
 class PointControllerTest {
 
     private PointController pointController;
-    private UserPointTable userPointTable;
-    private PointHistoryTable pointHistoryTable;
+    private UserPointRepository userPointRepository;
+    private PointHistoryRepository pointHistoryRepository;
 
     @BeforeEach
     void setUp() {
         // 각 테스트마다 새로운 인스턴스를 생성하여 테스트 간 격리를 보장
-        userPointTable = new UserPointTable();
-        pointHistoryTable = new PointHistoryTable();
-        PointService pointService = new PointService(userPointTable, pointHistoryTable);
+        UserPointTable userPointTable = new UserPointTable();
+        PointHistoryTable pointHistoryTable = new PointHistoryTable();
+        
+        // Repository 구현체 생성
+        userPointRepository = new UserPointRepositoryImpl(userPointTable);
+        pointHistoryRepository = new PointHistoryRepositoryImpl(pointHistoryTable);
+        
+        // Service와 Controller 생성
+        PointService pointService = new PointService(userPointRepository, pointHistoryRepository);
         pointController = new PointController(pointService);
     }
 
