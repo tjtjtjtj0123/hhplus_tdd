@@ -1,10 +1,9 @@
 package io.hhplus.tdd.controller;
 
+import io.hhplus.tdd.common.util.ApiLoggingUtil;
 import io.hhplus.tdd.domain.PointHistory;
 import io.hhplus.tdd.domain.UserPoint;
 import io.hhplus.tdd.service.PointService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -12,8 +11,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/point")
 public class PointController {
-
-    private static final Logger log = LoggerFactory.getLogger(PointController.class);
     
     private final PointService pointService;
     
@@ -28,7 +25,12 @@ public class PointController {
     public UserPoint point(
             @PathVariable long id
     ) {
-        return pointService.getUserPoint(id);
+        return ApiLoggingUtil.executeWithLogging(
+            "포인트 조회",
+            "userId: " + id,
+            () -> pointService.getUserPoint(id),
+            result -> "point: " + result.point()
+        );
     }
 
     /**
@@ -38,7 +40,12 @@ public class PointController {
     public List<PointHistory> history(
             @PathVariable long id
     ) {
-        return pointService.getUserPointHistories(id);
+        return ApiLoggingUtil.executeWithLogging(
+            "포인트 내역 조회",
+            "userId: " + id,
+            () -> pointService.getUserPointHistories(id),
+            result -> "historyCount: " + result.size()
+        );
     }
 
     /**
@@ -49,7 +56,13 @@ public class PointController {
             @PathVariable long id,
             @RequestBody long amount
     ) {
-        return pointService.chargeUserPoint(id, amount);
+        return ApiLoggingUtil.executeWithLogging(
+            "포인트 충전",
+            String.format("userId: %d, chargeAmount: %d", id, amount),
+            () -> pointService.chargeUserPoint(id, amount),
+            result -> String.format("beforePoint: %d, afterPoint: %d, chargedAmount: %d", 
+                    result.point() - amount, result.point(), amount)
+        );
     }
 
     /**
@@ -60,6 +73,12 @@ public class PointController {
             @PathVariable long id,
             @RequestBody long amount
     ) {
-        return pointService.useUserPoint(id, amount);
+        return ApiLoggingUtil.executeWithLogging(
+            "포인트 사용",
+            String.format("userId: %d, useAmount: %d", id, amount),
+            () -> pointService.useUserPoint(id, amount),
+            result -> String.format("beforePoint: %d, afterPoint: %d, usedAmount: %d", 
+                    result.point() + amount, result.point(), amount)
+        );
     }
 }
