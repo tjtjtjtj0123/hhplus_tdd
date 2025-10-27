@@ -1,4 +1,4 @@
-package io.hhplus.tdd;
+package io.hhplus.tdd.service;
 
 import io.hhplus.tdd.database.PointHistoryTable;
 import io.hhplus.tdd.database.UserPointTable;
@@ -9,7 +9,6 @@ import io.hhplus.tdd.repository.PointHistoryRepository;
 import io.hhplus.tdd.repository.PointHistoryRepositoryImpl;
 import io.hhplus.tdd.repository.UserPointRepository;
 import io.hhplus.tdd.repository.UserPointRepositoryImpl;
-import io.hhplus.tdd.service.PointService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
