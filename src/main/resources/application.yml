@@ -1,2 +1,16 @@
 spring:
   application.name: hhplus-tdd
+
+# 로깅 설정
+logging:
+  level:
+    io.hhplus.tdd: INFO  # 우리 패키지는 INFO 레벨로
+    org.springframework: WARN  # Spring 프레임워크는 WARN 레벨로 (불필요한 로그 줄이기)
+    org.hibernate: WARN  # Hibernate 로그도 줄이기
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/hhplus-tdd.log  # 로그 파일 경로
+    max-size: 10MB  # 로그 파일 최대 크기
+    max-history: 30  # 로그 파일 보관 일수
