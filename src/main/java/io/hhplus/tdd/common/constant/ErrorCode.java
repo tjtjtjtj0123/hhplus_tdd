@@ -15,6 +15,13 @@ public final class ErrorCode {
     public static final String INSUFFICIENT_BALANCE = "POINT_001";
     public static final String INVALID_POINT_AMOUNT = "POINT_002";
     public static final String POINT_OPERATION_FAILED = "POINT_003";
+    public static final String EXCEED_MAX_BALANCE = "POINT_004";
+    public static final String EXCEED_MAX_CHARGE_AMOUNT = "POINT_005";
+    public static final String EXCEED_MAX_USE_AMOUNT = "POINT_006";
+    public static final String BELOW_MIN_AMOUNT = "POINT_007";
+    public static final String INVALID_AMOUNT_UNIT = "POINT_008";
+    public static final String EXCEED_DAILY_CHARGE_LIMIT = "POINT_009";
+    public static final String EXCEED_DAILY_USE_LIMIT = "POINT_010";
 
     // === 사용자 관련 에러 코드 ===
     public static final String USER_NOT_FOUND = "USER_001";

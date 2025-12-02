@@ -1,5 +1,8 @@
 package io.hhplus.tdd.service;
 
+import io.hhplus.tdd.common.constant.ErrorCode;
+import io.hhplus.tdd.common.constant.PointPolicy;
+import io.hhplus.tdd.common.exception.BusinessException;
 import io.hhplus.tdd.domain.PointHistory;
 import io.hhplus.tdd.domain.TransactionType;
 import io.hhplus.tdd.domain.UserPoint;
@@ -82,6 +85,86 @@ public class PointService {
     }
 
     /**
+     * 사용자 ID 유효성 검증
+     */
+    private void validateUserId(long userId) {
+        if (!PointPolicy.isValidUserId(userId)) {
+            throw new BusinessException(ErrorCode.INVALID_USER_ID, 
+                String.format("유효하지 않은 사용자 ID입니다. (범위: %d ~ %d)", 
+                    PointPolicy.MIN_USER_ID, PointPolicy.MAX_USER_ID));
+        }
+    }
+
+    /**
+     * 충전 금액 정책 검증
+     */
+    private void validateChargeAmount(long amount) {
+        if (amount <= 0) {
+            throw new BusinessException(ErrorCode.INVALID_POINT_AMOUNT, "충전 금액은 0보다 커야 합니다.");
+        }
+        
+        if (amount < PointPolicy.MIN_AMOUNT) {
+            throw new BusinessException(ErrorCode.BELOW_MIN_AMOUNT, 
+                String.format("최소 충전 금액은 %d 포인트입니다.", PointPolicy.MIN_AMOUNT));
+        }
+        
+        if (amount > PointPolicy.MAX_CHARGE_AMOUNT) {
+            throw new BusinessException(ErrorCode.EXCEED_MAX_CHARGE_AMOUNT, 
+                String.format("최대 충전 금액은 %d 포인트입니다.", PointPolicy.MAX_CHARGE_AMOUNT));
+        }
+        
+        if (!PointPolicy.isValidAmountUnit(amount)) {
+            throw new BusinessException(ErrorCode.INVALID_AMOUNT_UNIT, 
+                String.format("충전 금액은 %d 포인트 단위로만 가능합니다.", PointPolicy.MIN_AMOUNT));
+        }
+    }
+
+    /**
+     * 사용 금액 정책 검증
+     */
+    private void validateUseAmount(long amount) {
+        if (amount <= 0) {
+            throw new BusinessException(ErrorCode.INVALID_POINT_AMOUNT, "사용 금액은 0보다 커야 합니다.");
+        }
+        
+        if (amount < PointPolicy.MIN_AMOUNT) {
+            throw new BusinessException(ErrorCode.BELOW_MIN_AMOUNT, 
+                String.format("최소 사용 금액은 %d 포인트입니다.", PointPolicy.MIN_AMOUNT));
+        }
+        
+        if (amount > PointPolicy.MAX_USE_AMOUNT) {
+            throw new BusinessException(ErrorCode.EXCEED_MAX_USE_AMOUNT, 
+                String.format("최대 사용 금액은 %d 포인트입니다.", PointPolicy.MAX_USE_AMOUNT));
+        }
+        
+        if (!PointPolicy.isValidAmountUnit(amount)) {
+            throw new BusinessException(ErrorCode.INVALID_AMOUNT_UNIT, 
+                String.format("사용 금액은 %d 포인트 단위로만 가능합니다.", PointPolicy.MIN_AMOUNT));
+        }
+    }
+
+    /**
+     * 충전 후 잔고 초과 검증
+     */
+    private void validateBalanceAfterCharge(long currentBalance, long chargeAmount) {
+        if (!PointPolicy.isValidBalanceAfterCharge(currentBalance, chargeAmount)) {
+            throw new BusinessException(ErrorCode.EXCEED_MAX_BALANCE, 
+                String.format("최대 보유 가능 포인트는 %d 포인트입니다. (현재: %d, 충전 시도: %d)", 
+                    PointPolicy.MAX_BALANCE, currentBalance, chargeAmount));
+        }
+    }
+
+    /**
+     * 잔고 부족 검증
+     */
+    private void validateSufficientBalance(long currentBalance, long useAmount) {
+        if (currentBalance < useAmount) {
+            throw new BusinessException(ErrorCode.INSUFFICIENT_BALANCE, 
+                String.format("포인트 잔고가 부족합니다. (현재: %d, 사용 시도: %d)", currentBalance, useAmount));
+        }
+    }
+
+    /**
      * 특정 유저의 포인트를 조회합니다.
      * 
      * @param userId 조회할 유저 ID
@@ -111,10 +194,11 @@ public class PointService {
      * @throws IllegalArgumentException 충전 금액이 0 이하인 경우
      */
     public UserPoint chargeUserPoint(long userId, long amount) {
-        // 충전 금액 유효성 검증
-        if (amount <= 0) {
-            throw new IllegalArgumentException("충전 금액은 0보다 커야 합니다.");
-        }
+        // 사용자 ID 검증
+        validateUserId(userId);
+        
+        // 충전 금액 정책 검증
+        validateChargeAmount(amount);
 
         return executeWithUserLock(userId, () -> {
             log.info("포인트 충전 시작 - 사용자: {}, 충전금액: {}", userId, amount);
@@ -122,6 +206,9 @@ public class PointService {
             // 현재 포인트 조회
             UserPoint currentPoint = userPointRepository.selectById(userId);
             log.debug("현재 포인트: {}", currentPoint.point());
+            
+            // 충전 후 최대 잔고 초과 검증
+            validateBalanceAfterCharge(currentPoint.point(), amount);
             
             // 새로운 포인트 계산
             long newPointAmount = currentPoint.point() + amount;
@@ -148,10 +235,11 @@ public class PointService {
      * @throws IllegalStateException 잔고가 부족한 경우
      */
     public UserPoint useUserPoint(long userId, long amount) {
-        // 사용 금액 유효성 검증
-        if (amount <= 0) {
-            throw new IllegalArgumentException("사용 금액은 0보다 커야 합니다.");
-        }
+        // 사용자 ID 검증
+        validateUserId(userId);
+        
+        // 사용 금액 정책 검증
+        validateUseAmount(amount);
 
         return executeWithUserLock(userId, () -> {
             log.info("포인트 사용 시작 - 사용자: {}, 사용금액: {}", userId, amount);
@@ -160,11 +248,8 @@ public class PointService {
             UserPoint currentPoint = userPointRepository.selectById(userId);
             log.debug("현재 포인트: {}", currentPoint.point());
             
-            // 잔고 확인
-            if (currentPoint.point() < amount) {
-                log.warn("포인트 잔고 부족 - 사용자: {}, 현재: {}, 요청: {}", userId, currentPoint.point(), amount);
-                throw new IllegalStateException("포인트 잔고가 부족합니다. 현재 잔고: " + currentPoint.point() + ", 사용 요청: " + amount);
-            }
+            // 잔고 부족 검증
+            validateSufficientBalance(currentPoint.point(), amount);
             
             // 새로운 포인트 계산
             long newPointAmount = currentPoint.point() - amount;
