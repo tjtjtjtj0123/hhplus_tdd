@@ -7,7 +7,7 @@ spring_cloud_dependencies = "2023.0.0"
 spring_io_dependency_management = "1.1.0"
 spring_mockk = "4.0.2"
 
-lombok = "1.18.22"
+lombok = "1.18.34"
 
 redisson = "3.25.2"
 # test
